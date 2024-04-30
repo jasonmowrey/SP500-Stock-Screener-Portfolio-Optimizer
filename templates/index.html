@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Optimizer</title>
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <style>
+        body {
+            background-color: black; /* Set background to black */
+            color: white; /* Set text color to white */
+        }
+        label, .form-check-label { /* Ensures labels are also visible */
+            color: white;
+        }
+        .container {
+            max-width: 800px; /* Adjust the width as needed */
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Select Tickers for Portfolio Optimization</h1>
+    <form method="POST">
+        <div class="row">
+            {% for ticker in tickers %}
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="tickers" value="{{ ticker }}" id="{{ ticker }}" checked>
+                    <label class="form-check-label" for="{{ ticker }}">
+                        {{ ticker }}
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary">Optimize Portfolio</button>
+        </div>
+    </form>
+</div>
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

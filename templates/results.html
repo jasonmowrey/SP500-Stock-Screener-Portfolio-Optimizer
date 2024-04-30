@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Results</title>
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Portfolio Optimization Results</h1>
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Efficient Frontier</h2>
+            <img src="data:image/png;base64,{{ plot_url_ef }}" class="img-fluid">
+        </div>
+        {% for label, url in plot_urls.items() %}
+        <div class="col-md-4">
+            <h3>{{ label }} Portfolio</h3>
+            <img src="data:image/png;base64,{{ url }}" class="img-fluid">
+            <p>Expected Return: {{ "%.2f"|format(performances[loop.index0][0] * 100) }}%</p>
+            <p>Volatility: {{ "%.2f"|format(performances[loop.index0][1] * 100) }}%</p>
+            <p>Sharpe Ratio: {{ "%.2f"|format(performances[loop.index0][2]) }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    <a href="/" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>
