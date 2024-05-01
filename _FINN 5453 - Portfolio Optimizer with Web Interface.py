@@ -27,7 +27,10 @@ file_path = 'final_stock_data.csv'
 stock_data = pd.read_csv(file_path)
 unique_tickers = stock_data['ticker'].unique()
 
-# Define the app
+# Function to format weights as percentages
+def format_weights(weights):
+    return {ticker: f'{weight*100:.2f}%' for ticker, weight in weights.items()}
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -50,38 +53,22 @@ def index():
         ef = EfficientFrontier(mu, S, solver=cp.CLARABEL)
         sharpe_weights = ef.max_sharpe()
         sharpe_perf = ef.portfolio_performance(verbose=True)
+        sharpe_weights_formatted = format_weights(sharpe_weights)
 
         # Optimize for minimum volatility
         ef = EfficientFrontier(mu, S, solver=cp.CLARABEL)
-
         min_vol_weights = ef.min_volatility()
         min_vol_perf = ef.portfolio_performance(verbose=True)
+        min_vol_weights_formatted = format_weights(min_vol_weights)
 
         # Optimize for maximum return
         ef = EfficientFrontier(mu, S, solver=cp.CLARABEL)
-        target_return = mu.max() * 0.99  # Use 99% of the maximum return to ensure it is feasible
+        target_return = mu.max() * 0.99
         max_ret_weights = ef.efficient_return(target_return=target_return)
         max_ret_perf = ef.portfolio_performance(verbose=True)
+        max_ret_weights_formatted = format_weights(max_ret_weights)
 
-        # Generate plots for the portfolio weights
-        plot_urls = {}
-        for label, weights, perf in zip(["Sharpe", "Min Vol", "Max Ret"],
-                                        [sharpe_weights, min_vol_weights, max_ret_weights],
-                                        [sharpe_perf, min_vol_perf, max_ret_perf]):
-            fig, ax = plt.subplots()
-            tickers = list(weights.keys())
-            values = list(weights.values())
-            ax.bar(tickers, values, color='blue')
-            ax.set_title(f'Portfolio Weights for {label} Portfolio')
-            ax.set_ylabel('Weight')
-            ax.set_xlabel('Ticker')
-            img = io.BytesIO()
-            plt.savefig(img, format='png')
-            plt.close(fig)  # Close the figure to free resources
-            img.seek(0)
-            plot_urls[label] = base64.b64encode(img.getvalue()).decode('utf8')
-
-        # Generate the efficient frontier plot again (as previous step)
+        # Generate the efficient frontier plot
         fig, ax = plt.subplots()
         ef_for_plotting = EfficientFrontier(mu, S, solver=cp.CLARABEL)
         plotting.plot_efficient_frontier(ef_for_plotting, ax=ax, show_assets=False)
@@ -96,10 +83,33 @@ def index():
         img.seek(0)
         plot_url_ef = base64.b64encode(img.getvalue()).decode('utf8')
 
+        # Generate plots for the portfolio weights
+        plot_urls = {}
+        for label, weights, formatted_weights, perf in zip(["Sharpe", "Min Vol", "Max Ret"],
+                                                          [sharpe_weights, min_vol_weights, max_ret_weights],
+                                                          [sharpe_weights_formatted, min_vol_weights_formatted, max_ret_weights_formatted],
+                                                          [sharpe_perf, min_vol_perf, max_ret_perf]):
+            fig, ax = plt.subplots()
+            tickers = list(weights.keys())
+            values = list(weights.values())
+            ax.bar(tickers, values, color='blue')
+            ax.set_title(f'{label} Portfolio Weights')
+            ax.set_ylabel('Weight')
+            ax.set_xlabel('Ticker')
+            for i, (ticker, value) in enumerate(formatted_weights.items()):
+                ax.text(i, values[i], value, ha='center', va='bottom')
+            img = io.BytesIO()
+            plt.savefig(img, format='png')
+            plt.close(fig)
+            img.seek(0)
+            plot_urls[label] = base64.b64encode(img.getvalue()).decode('utf8')
+
         return render_template('results.html', plot_url_ef=plot_url_ef, plot_urls=plot_urls,
-                               performances=[sharpe_perf, min_vol_perf, max_ret_perf])
+                               performances=[sharpe_perf, min_vol_perf, max_ret_perf],
+                               formatted_weights=[sharpe_weights_formatted, min_vol_weights_formatted, max_ret_weights_formatted])
 
     return render_template('index.html', tickers=unique_tickers)
+
 
 def open_browser():
       webbrowser.open_new('http://127.0.0.1:5000/')
